@@ -1,0 +1,152 @@
+# import external libraries
+import nltk
+from nltk.corpus import stopwords
+nltk.download("punkt")
+nltk.download("stopwords")
+
+# The main function for this program to orchestrate the overall process.
+def main():
+    #create object instance
+    hobbies = hobby_word_freq()
+    # Open the grade file for reading 
+    hobbies.readDataFromFile()
+    # Process the data and save term frequency for all documents (the nested dictionary) and document frequency as attributes",
+    hobbies.processData()
+    # Get user input for search terms and display corresponding document frequency and term frequency",
+    hobbies.searchWord()
+        
+class hobby_word_freq:
+
+    def __init__(self):
+        self.file = None
+        self.doc_frequency = dict()
+        self.term_frequency_per_doc = dict()
+
+
+    # Read the data in from a file, handling all exceptions gracefully. Returns a file object",
+    def readDataFromFile(self):
+        # Prime the loop to read file",
+        file_name = None
+        while (file_name == None):
+            # Exceptions are caught if no file is found and the user is asked to re-enter the file name.",
+            try:
+                file_name = input("Please enter the name of the input data file: ")
+                self.file = open(file_name, "r")
+                # if the file is successfully open, this function will be terminated and the file object will be returned",
+                break
+            except FileNotFoundError:
+                file_name = None
+                print("The file you requested was not found.  Please try again.\n")
+
+    # Process each student's hobby text to term frequency and document frequency
+    def processData(self):
+        # Process all input data lines, 2 at a time.
+        index = 0
+        for line in self.file:
+            try:
+                if index % 2 == 0:
+                    # process student ID
+                    student_id = line.rstrip()
+                else:
+                    # process hobby text
+                    hobby_text = line.rstrip()
+            except:
+                print("Error in parsing input data file. Aborting.",sep="")
+                return
+
+            # process data every two lines because student id and hobby text need to be processed together
+            if index % 2 == 1:
+
+                # tokenize hobby text
+                tokens = nltk.word_tokenize(hobby_text)
+
+                # removes periods and commas from a list of tokens
+                tokens = self.removePeriods(tokens)
+                
+                # convert all tokens to lower cases
+                tokens = self.convertLower(tokens)
+                
+                # print(tokens)
+
+                # remove stopwords from tokens
+                tokens = self.removeStopWords(tokens)
+
+                # calculate term frequency for student's hobby tex
+                self.term_frequency_per_doc[student_id] = self.calTermFreq(tokens)
+
+                # Map the created term frequncy for each student to the outer dictionary in the nested dictionary
+                term_freq = self.term_frequency_per_doc[student_id]
+
+                # calculate document frequency
+                self.doc_frequency = self.calDocFreq(term_freq, self.doc_frequency)
+                
+            index += 1
+
+        # Close the file and confirm to the user that the process has ended successfully.
+        self.file.close()
+        print("The input file has been successfully processed.")
+        
+
+    # removes periods and commas from a list of tokens
+    def removePeriods(self,token):
+        # removes periods and commas until all of them are removed from token
+        # remove method of list can remove only the first item in the list
+        while "," in token:
+            token.remove(",")
+        while "." in token:
+            token.remove(".")
+        return token
+
+    # convert all tokens to lower cases
+    def convertLower(self,token):
+        length = len(token)
+        for num in range(length):
+            token[num] = token[num].lower()
+        return token
+
+    # remove stopwords from tokens
+    def removeStopWords(self,token):
+        # create stopwords list
+        stop_words = stopwords.words("english")
+        token = [i for i in token if i not in stop_words]
+        return token
+
+    # calculate term frequency for student's hobby text
+    def calTermFreq(self,token):  
+        term_freq = nltk.FreqDist(token)
+        return term_freq
+
+    # calculate document frequency
+    def calDocFreq(self,term_freq, doc_freq):       
+        for key in term_freq:
+            if key in doc_freq.keys():
+                doc_freq[key] += term_freq[key]
+            else:
+                doc_freq[key] = term_freq[key]
+        return doc_freq
+
+    # function for search and display
+    def searchWord(self):   
+        while True:
+            word = input("\nPlease enter a word for which you look term frequency and document frequency (or blank if done): ")
+            # check if string is empty
+            if (len(word)==0):
+                break
+            #check if word is in document
+            if word in self.doc_frequency.keys():
+                #if in document search 
+                #print document frequency
+                print(f'\nDocument Frequency of {word}: {self.doc_frequency[word]}')
+                #and print each student's frequency
+                print("\nTerm Frequency (TF) are as follows.")
+                for student in self.term_frequency_per_doc.keys():
+                    if word in self.term_frequency_per_doc[student].keys():
+                        print(f'TF of {word} in {student} are: {self.term_frequency_per_doc[student][word]}')
+                print("All information has been shown.")
+            else:
+                print("The word cannot be found in the collection.")
+
+
+# Run the program!
+main()
+
